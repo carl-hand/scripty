@@ -39,6 +39,24 @@ function App() {
         box.style.display = 'none';
       }
     });
+
+    document.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const { target } = event;
+      const { ariaLabel, id, name, title, attributes = {} } = target;
+
+      const attributesMap = Object.keys(attributes)
+        .map((key) => {
+          const object = attributes[key];
+          const { name, value } = object;
+          return { name, value };
+        })
+        .filter((obj) => Object.keys(obj).length > 0);
+
+      // 1. pass element info back to chrome extension
+      console.log(`attributesMap: ${JSON.stringify(attributesMap)}`);
+      // 2. process this info and add line to output script
+    });
   }
 
   const handleClick = async () => {
@@ -64,6 +82,11 @@ function App() {
       const { id, url: matchingUrl } = selectedTabsArray[0];
       console.log(`tabs id1: ${id}`);
       console.log(`tabs url1: ${matchingUrl}`);
+      chrome.scripting.insertCSS({
+        target: { tabId: id },
+        files: ['index.css'],
+      });
+
       chrome.scripting.executeScript({
         target: { tabId: id },
         function: addListeners,

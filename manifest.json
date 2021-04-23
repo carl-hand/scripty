@@ -9,12 +9,6 @@
   "background": {
     "service_worker": "background.js"
   },
-  "content_scripts": [
-    {
-      "matches": ["https://*/*"],
-      "css": ["index.css"]
-    }
-  ],
   "action": {
     "default_title": "Scripty"
   },
