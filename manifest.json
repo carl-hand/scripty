@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Scripty",
+  "description": "This extension...",
+  "version": "1.0",
+  "homepage_url": "https://github.com/carl-hand/scripty",
+  "permissions": ["tabs", "activeTab", "scripting"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*/*"],
+      "css": ["index.css"]
+    }
+  ],
+  "action": {
+    "default_title": "Scripty"
+  },
+  "content_security_policy": {
+    "isolated_world": "script-src 'self'"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["/static/js/main.37b9b8c2.chunk.js.map"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
