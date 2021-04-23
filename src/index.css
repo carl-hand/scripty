@@ -11,3 +11,16 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+#scripty-root-123 {
+  height: 600px;
+  width: 450px;
+}
+
+.box {
+  display: block;
+  background-color: rgb(111, 168, 220, 0.66);
+  position: absolute;
+  pointer-events: none;
+  z-index: 99999999999999999999999;
+}

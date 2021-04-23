@@ -14,7 +14,6 @@ build() {
 
     cp src/background.js build
 
-
     cp src/index.css build
 
     # sed -i 's#"/static/js/".*$#"/static/js/": "",#g' build/index.html
