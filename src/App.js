@@ -59,7 +59,7 @@ function App() {
         selectedTabRef.current.id,
         { type: 'getSelectedElements' },
         function (selectedElements) {
-          console.log(`atttributesMap: ${JSON.stringify(selectedElements)}`);
+          console.log(`selectedElements: ${JSON.stringify(selectedElements)}`);
           console.log(`length: ${Object.keys(selectedElements).length}`);
         }
       );

@@ -1,6 +1,6 @@
 /*global chrome*/
 
-let attributesMap;
+let selectedElements = [];
 
 function addListenersToBackgroundPage() {
   let box = document.getElementById('myBox');
@@ -37,41 +37,53 @@ function addListenersToBackgroundPage() {
   });
 
   document.addEventListener('click', (event) => {
-    event.stopPropagation();
     const { target } = event;
-    const { attributes = {} } = target;
-
-    console.log(JSON.stringify(attributes));
-    // do I want to log all attributes on the element? maybe just the first one
-    const latestAttributesMap = Object.keys(attributes).map((key) => {
-      const object = attributes[key];
-      const { name, value } = object;
-      return { type: 'click', name, value };
-    });
-
-    console.log(typeof latestAttributesMap);
-
-    attributesMap = { ...attributesMap, ...latestAttributesMap };
-    // console.log(`attributesMap: ${JSON.stringify(attributesMap)}`);
+    const selectedElement = findSelectedElement(target, 'click');
+    selectedElements = [...selectedElements, selectedElement];
+    console.log(`selectedElements: ${JSON.stringify(selectedElements)}`);
   });
 
   document.addEventListener('change', (event) => {
     const { target } = event;
     const { attributes = {} } = target;
 
-    attributesMap = { ...attributesMap };
     console.log(`vals ${event?.target.value}`);
   });
 }
 
-addListenersToBackgroundPage();
+function findSelectedElement(target, eventType) {
+  if (target.hasAttributes()) {
+    const { attributes = {} } = target;
+    let selectedName;
+    let selectedValue;
+    for (const key in attributes) {
+      const entry = attributes[key];
+      const { name, value } = entry;
+      if (name && value) {
+        // stop once we find first name value pair
+        return {
+          type: eventType,
+          name: selectedName,
+          value: selectedValue,
+        };
+      }
+    }
+  }
+
+  return {
+    type: 'No Match',
+    value: target.innerHTML,
+  };
+}
 
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.type) {
     case 'getSelectedElements':
-      sendResponse(attributesMap);
+      sendResponse(selectedElements);
       break;
     default:
       console.error('Unrecognised message: ', message);
   }
 });
+
+addListenersToBackgroundPage();
