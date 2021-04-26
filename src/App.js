@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 
 function App() {
   const [url, setUrl] = useState('');
+  const [logData, setLogData] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const selectedTabRef = useRef();
 
@@ -68,7 +69,17 @@ function App() {
 
   const handleChange = (evt) => {
     const { target } = evt;
-    setUrl(target?.value);
+    const { name, value, checked } = target;
+    if (name === 'url') {
+      setUrl(value);
+    } else if (name === 'logData') {
+      setLogData(checked);
+      chrome.tabs.sendMessage(
+        selectedTabRef.current.id,
+        { type: 'logData' },
+        function (response) {}
+      );
+    }
   };
 
   return (
@@ -81,6 +92,7 @@ function App() {
         className="App-header"
       >
         <input
+          name="url"
           placeholder="Enter Url to test"
           value={url}
           onChange={handleChange}
@@ -91,6 +103,12 @@ function App() {
         <button name="stop" onClick={handleClick}>
           Stop
         </button>
+        <input
+          name="logData"
+          type="checkbox"
+          value={logData}
+          onChange={handleChange}
+        />
         {errorMsg && <p>{errorMsg}</p>}
       </header>
     </div>

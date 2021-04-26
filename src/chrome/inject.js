@@ -120,10 +120,14 @@ function getSelectedElements() {
   return selectedElements;
 }
 
+function addEntry(entry) {
+  selectedElements = [...selectedElements, entry];
+}
+
 (async () => {
   const src = chrome.runtime.getURL('api.js');
   const contentScript = await import(src);
-  contentScript.addMessageListener(getSelectedElements);
+  contentScript.addMessageListener(getSelectedElements, addEntry);
 })();
 
 addListenersToBackgroundPage();
