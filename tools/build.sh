@@ -13,6 +13,7 @@ build() {
     cp manifest.json build/manifest.json
     cp src/chrome/background.js build
     cp src/chrome/inject.js build
+    cp src/chrome/api.js build
     cp src/index.css build
 
     # sed -i 's#"/static/js/".*$#"/static/js/": "",#g' build/index.html

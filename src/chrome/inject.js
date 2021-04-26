@@ -1,5 +1,4 @@
 /*global chrome*/
-
 let selectedElements = [];
 
 function addListenersToBackgroundPage() {
@@ -117,14 +116,14 @@ function getElementNotFound(target) {
   };
 }
 
-chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-  switch (message.type) {
-    case 'getSelectedElements':
-      sendResponse(selectedElements);
-      break;
-    default:
-      console.error('Unrecognised message: ', message);
-  }
-});
+function getSelectedElements() {
+  return selectedElements;
+}
+
+(async () => {
+  const src = chrome.runtime.getURL('api.js');
+  const contentScript = await import(src);
+  contentScript.addMessageListener(getSelectedElements);
+})();
 
 addListenersToBackgroundPage();

@@ -55,6 +55,7 @@ function App() {
           selectedTabRef.current.id,
           { type: 'getSelectedElements' },
           function (selectedElements) {
+            // TODO: generate script...
             console.log(
               `selectedElements: ${JSON.stringify(selectedElements)}`
             );
