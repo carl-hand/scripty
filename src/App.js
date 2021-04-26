@@ -7,65 +7,63 @@ function App() {
   const [errorMsg, setErrorMsg] = useState('');
   const selectedTabRef = useRef();
 
-  const handleClick = async () => {
+  const handleClick = async (evt) => {
     console.log(`url: ${url}`);
-
     if (!url) {
       setErrorMsg('Please enter a url');
       return;
     }
 
-    try {
-      let activeTabs = await chrome.tabs.query({ active: true });
-      const selectedTabsArray = activeTabs.filter((tab) => {
-        return tab.url === url;
-      });
+    const { target } = evt;
+    const { name } = target;
 
-      selectedTabRef.current = selectedTabsArray?.[0];
+    if (name === 'start') {
+      try {
+        let activeTabs = await chrome.tabs.query({ active: true });
+        const selectedTabsArray = activeTabs.filter((tab) => {
+          return tab.url === url;
+        });
 
-      const noActiveTabWithUrl = selectedTabsArray?.length <= 0;
-      if (noActiveTabWithUrl) {
-        setErrorMsg(`No active tab found with url: ${url}`);
-        return;
+        selectedTabRef.current = selectedTabsArray?.[0];
+
+        const noActiveTabWithUrl = selectedTabsArray?.length <= 0;
+        if (noActiveTabWithUrl) {
+          setErrorMsg(`No active tab found with url: ${url}`);
+          return;
+        }
+
+        const { id, url: matchingUrl } = selectedTabsArray[0];
+        console.log(`tabs id1: ${id}`);
+        console.log(`tabs url1: ${matchingUrl}`);
+
+        chrome.scripting.insertCSS({
+          target: { tabId: id },
+          files: ['index.css'],
+        });
+
+        chrome.scripting.executeScript({
+          target: { tabId: id },
+          files: ['inject.js'],
+        });
+        setErrorMsg('');
+      } catch (err) {
+        setErrorMsg('Oops something went wrong...');
       }
-
-      const { id, url: matchingUrl } = selectedTabsArray[0];
-      console.log(`tabs id1: ${id}`);
-      console.log(`tabs url1: ${matchingUrl}`);
-
-      chrome.scripting.insertCSS({
-        target: { tabId: id },
-        files: ['index.css'],
-      });
-
-      chrome.scripting.executeScript({
-        target: { tabId: id },
-        files: ['inject.js'],
-      });
-      setErrorMsg('');
-    } catch (err) {
-      setErrorMsg('Oops something went wrong...');
+    } else if (name === 'stop') {
+      if (selectedTabRef.current) {
+        chrome.tabs.sendMessage(
+          selectedTabRef.current.id,
+          { type: 'getSelectedElements' },
+          function (selectedElements) {
+            console.log(
+              `selectedElements: ${JSON.stringify(selectedElements)}`
+            );
+            console.log(`length: ${Object.keys(selectedElements).length}`);
+          }
+        );
+      }
     }
   };
-
-  setInterval(() => {
-    // chrome.tabs.query({ active: true }, function (tabs) {
-    if (!url) {
-      return;
-    }
-
-    if (selectedTabRef.current) {
-      chrome.tabs.sendMessage(
-        selectedTabRef.current.id,
-        { type: 'getSelectedElements' },
-        function (selectedElements) {
-          console.log(`selectedElements: ${JSON.stringify(selectedElements)}`);
-          console.log(`length: ${Object.keys(selectedElements).length}`);
-        }
-      );
-    }
-    // });
-  }, 1000);
 
   const handleChange = (evt) => {
     const { target } = evt;
@@ -86,7 +84,12 @@ function App() {
           value={url}
           onChange={handleChange}
         />
-        <button onClick={handleClick}>Start</button>
+        <button name="start" onClick={handleClick}>
+          Start
+        </button>
+        <button name="stop" onClick={handleClick}>
+          Stop
+        </button>
         {errorMsg && <p>{errorMsg}</p>}
       </header>
     </div>
