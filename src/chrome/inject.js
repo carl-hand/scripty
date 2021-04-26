@@ -65,17 +65,32 @@ function findSelectedElement(target, eventType) {
 function findClickedElement(target) {
   if (target.hasAttributes()) {
     const { attributes = {} } = target;
+    let fallback;
     for (const key in attributes) {
       const entry = attributes[key];
       const { name, value } = entry;
       if (name && value) {
-        // stop once we find first name value pair
-        return {
-          type: 'click',
-          name,
-          value,
-        };
+        // pick class as a last resort as this value could be brittle
+        if (name === 'class') {
+          fallback = {
+            type: 'click',
+            name,
+            value,
+          };
+        } else {
+          // stop once we find first name value pair other than class
+          return {
+            type: 'click',
+            name,
+            value,
+          };
+        }
       }
+    }
+
+    // use 'class' property if it exists and we found nothing else
+    if (fallback) {
+      return fallback;
     }
   }
 
