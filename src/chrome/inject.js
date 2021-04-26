@@ -45,33 +45,59 @@ function addListenersToBackgroundPage() {
 
   document.addEventListener('change', (event) => {
     const { target } = event;
-    const { attributes = {} } = target;
-
+    const selectedElement = findSelectedElement(target, 'change');
+    selectedElements = [...selectedElements, selectedElement];
     console.log(`vals ${event?.target.value}`);
   });
 }
 
 function findSelectedElement(target, eventType) {
+  switch (eventType) {
+    case 'click':
+      return findClickedElement(target);
+    case 'change':
+      return findChangeElement(target);
+    default:
+      return { type: 'not supported' };
+  }
+}
+
+function findClickedElement(target) {
   if (target.hasAttributes()) {
     const { attributes = {} } = target;
-    let selectedName;
-    let selectedValue;
     for (const key in attributes) {
       const entry = attributes[key];
       const { name, value } = entry;
       if (name && value) {
         // stop once we find first name value pair
         return {
-          type: eventType,
-          name: selectedName,
-          value: selectedValue,
+          type: 'click',
+          name,
+          value,
         };
       }
     }
   }
 
+  return getElementNotFound(target);
+}
+
+function findChangeElement(target) {
+  const { name, value } = target;
+  if (name && value) {
+    return {
+      type: 'change',
+      name,
+      value,
+    };
+  }
+
+  return getElementNotFound(target);
+}
+
+function getElementNotFound(target) {
   return {
-    type: 'No Match',
+    type: 'no match',
     value: target.innerHTML,
   };
 }
