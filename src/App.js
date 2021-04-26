@@ -1,10 +1,11 @@
 /*global chrome*/
 import './App.css';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 function App() {
   const [url, setUrl] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const selectedTabRef = useRef();
 
   const handleClick = async () => {
     console.log(`url: ${url}`);
@@ -20,6 +21,8 @@ function App() {
         return tab.url === url;
       });
 
+      selectedTabRef.current = selectedTabsArray?.[0];
+
       const noActiveTabWithUrl = selectedTabsArray?.length <= 0;
       if (noActiveTabWithUrl) {
         setErrorMsg(`No active tab found with url: ${url}`);
@@ -29,7 +32,7 @@ function App() {
       const { id, url: matchingUrl } = selectedTabsArray[0];
       console.log(`tabs id1: ${id}`);
       console.log(`tabs url1: ${matchingUrl}`);
-      
+
       chrome.scripting.insertCSS({
         target: { tabId: id },
         files: ['index.css'],
@@ -37,12 +40,32 @@ function App() {
 
       chrome.scripting.executeScript({
         target: { tabId: id },
-        files: ['inject.js']
+        files: ['inject.js'],
       });
+      setErrorMsg('');
     } catch (err) {
       setErrorMsg('Oops something went wrong...');
     }
   };
+
+  setInterval(() => {
+    // chrome.tabs.query({ active: true }, function (tabs) {
+    if (!url) {
+      return;
+    }
+
+    if (selectedTabRef.current) {
+      chrome.tabs.sendMessage(
+        selectedTabRef.current.id,
+        { type: 'getSelectedElements' },
+        function (selectedElements) {
+          console.log(`atttributesMap: ${JSON.stringify(selectedElements)}`);
+          console.log(`length: ${Object.keys(selectedElements).length}`);
+        }
+      );
+    }
+    // });
+  }, 1000);
 
   const handleChange = (evt) => {
     const { target } = evt;

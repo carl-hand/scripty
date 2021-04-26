@@ -1,3 +1,7 @@
+/*global chrome*/
+
+let attributesMap;
+
 function addListenersToBackgroundPage() {
   let box = document.getElementById('myBox');
   if (!box) {
@@ -35,20 +39,39 @@ function addListenersToBackgroundPage() {
   document.addEventListener('click', (event) => {
     event.stopPropagation();
     const { target } = event;
-    const { ariaLabel, id, name, title, attributes = {} } = target;
+    const { attributes = {} } = target;
 
-    const attributesMap = Object.keys(attributes)
-      .map((key) => {
-        const object = attributes[key];
-        const { name, value } = object;
-        return { name, value };
-      })
-      .filter((obj) => Object.keys(obj).length > 0);
+    console.log(JSON.stringify(attributes));
+    // do I want to log all attributes on the element? maybe just the first one
+    const latestAttributesMap = Object.keys(attributes).map((key) => {
+      const object = attributes[key];
+      const { name, value } = object;
+      return { type: 'click', name, value };
+    });
 
-    // 1. pass element info back to chrome extension
-    console.log(`attributesMap: ${JSON.stringify(attributesMap)}`);
-    // 2. process this info and add line to output script
+    console.log(typeof latestAttributesMap);
+
+    attributesMap = { ...attributesMap, ...latestAttributesMap };
+    // console.log(`attributesMap: ${JSON.stringify(attributesMap)}`);
+  });
+
+  document.addEventListener('change', (event) => {
+    const { target } = event;
+    const { attributes = {} } = target;
+
+    attributesMap = { ...attributesMap };
+    console.log(`vals ${event?.target.value}`);
   });
 }
 
 addListenersToBackgroundPage();
+
+chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+  switch (message.type) {
+    case 'getSelectedElements':
+      sendResponse(attributesMap);
+      break;
+    default:
+      console.error('Unrecognised message: ', message);
+  }
+});
