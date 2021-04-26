@@ -97,18 +97,24 @@ function App() {
           value={url}
           onChange={handleChange}
         />
-        <button name="start" onClick={handleClick}>
-          Start
-        </button>
-        <button name="stop" onClick={handleClick}>
-          Stop
-        </button>
-        <input
-          name="logData"
-          type="checkbox"
-          value={logData}
-          onChange={handleChange}
-        />
+        <div>
+          <button name="start" onClick={handleClick}>
+            Start
+          </button>
+          <button name="stop" onClick={handleClick}>
+            Stop
+          </button>
+        </div>
+        <div>
+          <label htmlFor="log">Log Data</label>
+          <input
+            id="log"
+            name="logData"
+            type="checkbox"
+            value={logData}
+            onChange={handleChange}
+          />
+        </div>
         {errorMsg && <p>{errorMsg}</p>}
       </header>
     </div>
