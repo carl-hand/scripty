@@ -37,10 +37,19 @@ export function addMessageListener(getSelectedElements, addEntry) {
             type: 'logData',
           };
           addEntry(entry);
+          sendResponse();
         }
         break;
       default:
         console.error('Unrecognised message: ', message);
+    }
+  });
+}
+
+export function sendMessage(id, message, callback) {
+  chrome.tabs.sendMessage(id, message, function (response) {
+    if (typeof callback === 'function') {
+      callback(response);
     }
   });
 }

@@ -2,6 +2,7 @@
 import './App.css';
 import { useRef, useState } from 'react';
 import { createScript } from './utils/scriptUtil';
+import { insertCSS, executeScript, query, sendMessage } from './chrome/api';
 
 function App() {
   const [url, setUrl] = useState('');
@@ -19,6 +20,10 @@ function App() {
     }
   };
 
+  const generateScript = (selectedElements) => {
+    setScript(createScript(url, selectedElements));
+  };
+
   const handleClick = async (evt) => {
     console.log(`url: ${url}`);
     if (!url) {
@@ -31,8 +36,8 @@ function App() {
 
     if (name === 'start') {
       try {
-        let activeTabs = await chrome.tabs.query({ active: true });
-        const selectedTabsArray = activeTabs.filter((tab) => {
+        const activeTabs = await query({ active: true });
+        const selectedTabsArray = activeTabs?.filter((tab) => {
           return tab.url === url;
         });
 
@@ -47,27 +52,18 @@ function App() {
         console.log(`tabs id1: ${id}`);
         console.log(`tabs url1: ${matchingUrl}`);
 
-        chrome.scripting.insertCSS({
-          target: { tabId: id },
-          files: ['index.css'],
-        });
-
-        chrome.scripting.executeScript({
-          target: { tabId: id },
-          files: ['inject.js'],
-        });
+        insertCSS(id, ['index.css']);
+        executeScript(id, ['inject.js']);
         setErrorMsg('');
       } catch (err) {
         setErrorMsg('Oops something went wrong...');
       }
     } else if (name === 'stop') {
       if (selectedTabRef.current) {
-        chrome.tabs.sendMessage(
+        sendMessage(
           selectedTabRef.current.id,
           { type: 'getSelectedElements' },
-          function (selectedElements) {
-            setScript(createScript(url, selectedElements));
-          }
+          generateScript
         );
       }
     } else if (name === 'copy') {
@@ -85,11 +81,7 @@ function App() {
       setUrl(value);
     } else if (name === 'logData') {
       setLogData(checked);
-      chrome.tabs.sendMessage(
-        selectedTabRef.current.id,
-        { type: 'logData' },
-        function (response) {}
-      );
+      sendMessage(selectedTabRef.current.id, { type: 'logData' }, () => {});
     }
   };
 
