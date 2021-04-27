@@ -6,7 +6,17 @@ function App() {
   const [url, setUrl] = useState('');
   const [logData, setLogData] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [script, setScript] = useState('');
+  const [copySuccessMsg, setCopySuccessMsg] = useState('');
   const selectedTabRef = useRef();
+  const textAreaRef = useRef();
+
+  const copyToClipboard = () => {
+    if (textAreaRef.current) {
+      textAreaRef.current.select();
+      document.execCommand('copy');
+    }
+  };
 
   const handleClick = async (evt) => {
     console.log(`url: ${url}`);
@@ -25,14 +35,13 @@ function App() {
           return tab.url === url;
         });
 
-        selectedTabRef.current = selectedTabsArray?.[0];
-
         const noActiveTabWithUrl = selectedTabsArray?.length <= 0;
         if (noActiveTabWithUrl) {
           setErrorMsg(`No active tab found with url: ${url}`);
           return;
         }
 
+        selectedTabRef.current = selectedTabsArray[0];
         const { id, url: matchingUrl } = selectedTabsArray[0];
         console.log(`tabs id1: ${id}`);
         console.log(`tabs url1: ${matchingUrl}`);
@@ -56,16 +65,40 @@ function App() {
           selectedTabRef.current.id,
           { type: 'getSelectedElements' },
           function (selectedElements) {
-            // TODO: generate script...
-            console.log(
-              `selectedElements: ${JSON.stringify(selectedElements)}`
-            );
-            console.log(`length: ${Object.keys(selectedElements).length}`);
+            setScript(generateScript(selectedElements));
           }
         );
       }
+    } else if (name === 'copy') {
+      if (script) {
+        copyToClipboard();
+        setCopySuccessMsg('Script copied to clipboard');
+      }
     }
   };
+
+  function generateScript(selectedElements) {
+    let script = `logData 0 \nnavigate ${url}`;
+    console.log(`selectedElements: ${JSON.stringify(selectedElements)}`);
+    console.log(`length: ${Object.keys(selectedElements).length}`);
+    for (const element of selectedElements) {
+      const { name, value, input } = element;
+      if (element.type === 'click') {
+        const newLine = `\nexec document.querySelector('[${name}="${value}"]').click()`;
+        script += newLine;
+      } else if (element.type === 'change') {
+        const newLine = `\nexec document.querySelector('[${name}="${value}"]').value='${input}'`;
+        script += newLine;
+      } else if (element.type === 'logData') {
+        script += '\nlogData 1';
+      }
+    }
+
+    script += `\nnavigate ${url}`;
+    script += '\nwaitForComplete';
+
+    return script;
+  }
 
   const handleChange = (evt) => {
     const { target } = evt;
@@ -116,6 +149,12 @@ function App() {
           />
         </div>
         {errorMsg && <p>{errorMsg}</p>}
+
+        <button name="copy" onClick={handleClick}>
+          Copy to Clipboard
+        </button>
+        <label>{copySuccessMsg}</label>
+        <textarea ref={textAreaRef} id="txtArea" readOnly value={script} />
       </header>
     </div>
   );

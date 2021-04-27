@@ -53,17 +53,17 @@ function addListenersToBackgroundPage() {
 function findSelectedElement(target, eventType) {
   switch (eventType) {
     case 'click':
-      return findClickedElement(target);
+      return findElement(target, 'click');
     case 'change':
-      return findChangeElement(target);
+      return findElement(target, 'change');
     default:
       return { type: 'not supported' };
   }
 }
 
-function findClickedElement(target) {
+function findElement(target, eventType) {
   if (target.hasAttributes()) {
-    const { attributes = {} } = target;
+    const { attributes = {}, defaultValue } = target;
     let fallback;
     for (const key in attributes) {
       const entry = attributes[key];
@@ -72,16 +72,18 @@ function findClickedElement(target) {
         // pick class as a last resort as this value could be brittle
         if (name === 'class') {
           fallback = {
-            type: 'click',
+            type: eventType,
             name,
             value,
+            input: defaultValue,
           };
         } else {
           // stop once we find first name value pair other than class
           return {
-            type: 'click',
+            type: eventType,
             name,
             value,
+            input: defaultValue,
           };
         }
       }
@@ -91,19 +93,6 @@ function findClickedElement(target) {
     if (fallback) {
       return fallback;
     }
-  }
-
-  return getElementNotFound(target);
-}
-
-function findChangeElement(target) {
-  const { name, value } = target;
-  if (name && value) {
-    return {
-      type: 'change',
-      name,
-      value,
-    };
   }
 
   return getElementNotFound(target);
