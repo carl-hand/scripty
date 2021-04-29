@@ -23,6 +23,10 @@
     {
       "resources": ["api.js"],
       "matches": ["<all_urls>"]
+    },
+    {
+      "resources": ["priorityQueue.js"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

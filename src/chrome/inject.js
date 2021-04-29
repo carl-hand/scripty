@@ -1,5 +1,7 @@
 /*global chrome*/
 let selectedElements = [];
+let fallback;
+let priorityQueue;
 
 function addListenersToBackgroundPage() {
   let box = document.getElementById('myBox');
@@ -46,11 +48,13 @@ function addListenersToBackgroundPage() {
     const { target } = event;
     const selectedElement = findSelectedElement(target, 'change');
     selectedElements = [...selectedElements, selectedElement];
+    console.log(`selectedElements: ${JSON.stringify(selectedElements)}`);
     console.log(`vals ${event?.target.value}`);
   });
 }
 
 function findSelectedElement(target, eventType) {
+  priorityQueue.clear();
   switch (eventType) {
     case 'click':
       return findElement(target, 'click');
@@ -62,39 +66,58 @@ function findSelectedElement(target, eventType) {
 }
 
 function findElement(target, eventType) {
-  if (target.hasAttributes()) {
-    const { attributes = {}, defaultValue } = target;
-    let fallback;
-    for (const key in attributes) {
-      const entry = attributes[key];
-      const { name, value } = entry;
-      if (name && value) {
-        // pick class as a last resort as this value could be brittle
-        if (name === 'class') {
-          fallback = {
-            type: eventType,
-            name,
-            value,
-            input: defaultValue,
-          };
-        } else {
-          // stop once we find first name value pair other than class
-          return {
-            type: eventType,
-            name,
-            value,
-            input: defaultValue,
-          };
-        }
-      }
-    }
+  const { attributes = {}, defaultValue } = target;
+  const hasNoAttributes = !target.hasAttributes();
+  const onlyHasClassAtttribute =
+    Object.keys(attributes).length === 1 && attributes[0].name === 'class';
+  const hasChildren = target.children?.length > 0;
+  if (hasNoAttributes || (onlyHasClassAtttribute && hasChildren)) {
+    const entry = attributes[0];
+    const { name, value } = entry;
+    // set parent fallback
+    fallback = {
+      type: eventType,
+      name,
+      value,
+      input: defaultValue,
+    };
+    return findElement(target.children[0], eventType);
+  } else if (onlyHasClassAtttribute) {
+    // for elements that only have class attribute and no children
+    const entry = attributes[0];
+    const { name, value } = entry;
+    return {
+      type: eventType,
+      name,
+      value,
+      input: defaultValue,
+    };
+  }
 
-    // use 'class' property if it exists and we found nothing else
-    if (fallback) {
-      return fallback;
+  // if we get this far then we have an element with multiple attributes
+  for (const key in attributes) {
+    const entry = attributes[key];
+    const { name, value } = entry;
+    if (name && value) {
+      priorityQueue.insert({
+        type: eventType,
+        name,
+        value,
+        input: defaultValue,
+      });
     }
   }
 
+  if (!priorityQueue.isEmpty()) {
+    // return highest priority attribute
+    return priorityQueue.getAttribute();
+  }
+
+  if (fallback) {
+    return fallback;
+  }
+
+  // else return element not found
   return getElementNotFound(target);
 }
 
@@ -117,6 +140,12 @@ function addEntry(entry) {
   const src = chrome.runtime.getURL('api.js');
   const contentScript = await import(src);
   contentScript.addMessageListener(getSelectedElements, addEntry);
+})();
+
+(async () => {
+  const src = chrome.runtime.getURL('priorityQueue.js');
+  const { PriorityQueue } = await import(src);
+  priorityQueue = new PriorityQueue();
 })();
 
 addListenersToBackgroundPage();
