@@ -8,8 +8,8 @@ chrome.action.onClicked.addListener(async function (tab) {
     chrome.windows.remove(currentWindow.id);
   }
   currentWindow = await chrome.windows.create({
-    url: chrome.runtime.getURL("index.html"),
-    type: "popup",
+    url: chrome.runtime.getURL('index.html'),
+    type: 'popup',
     height: 600,
     width: 450,
     tabId: tab.id,
@@ -20,7 +20,7 @@ chrome.action.onClicked.addListener(async function (tab) {
 // background.js
 chrome.runtime.onConnect.addListener(function (externalPort) {
   externalPort.onDisconnect.addListener(function () {
-    console.log("onDisconnect");
+    console.log('onDisconnect');
     // Do stuff that should happen when popup window closes here
   });
 });
