@@ -2,6 +2,7 @@ export class PriorityQueue {
   items;
   count;
   CLASS_PRIORITY = 9999;
+  STYLE_PRIORITY = this.CLASS_PRIORITY + 1;
 
   constructor() {
     this.items = [];
@@ -44,12 +45,16 @@ export class PriorityQueue {
       return 4;
     } else if (name === 'alt') {
       return 5;
-    } else if (name !== 'class') {
-      // for attributes not listed here that I can't think of...
+    } else if (name === 'action') {
       return 6;
+    } else if (name === 'class') {
+      return this.CLASS_PRIORITY;
+    } else if (name === 'style') {
+      return this.STYLE_PRIORITY;
     }
 
-    return this.CLASS_PRIORITY;
+    // for attributes not listed here that I can't think of...
+    return 7;
   }
 
   getParentIndex(childIndex) {
