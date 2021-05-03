@@ -1,15 +1,21 @@
 export function createScript(url, selectedElements) {
-  let script = `logData 0 \nnavigate ${url}`;
+  if (!selectedElements) {
+    return 'Oops something went wrong';
+  }
 
+  let script = `logData 0 \nnavigate ${url}`;
   for (const element of selectedElements) {
-    const { name, value, input } = element;
-    if (element.type === 'click') {
+    const { type, name, value, input } = element;
+    if (type === 'click') {
       const newLine = `\nexec document.querySelector('[${name}="${value}"]').click()`;
       script += newLine;
-    } else if (element.type === 'change') {
+    } else if (type === 'change') {
       const newLine = `\nexec document.querySelector('[${name}="${value}"]').value='${input}'`;
       script += newLine;
-    } else if (element.type === 'logData') {
+    } else if (type === 'form') {
+      const newLine = `\nexec document.querySelector('[${name}="${value}"]').form.submit()`;
+      script += newLine;
+    } else if (type === 'logData') {
       script += '\nlogData 1';
     }
   }
