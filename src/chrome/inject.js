@@ -67,6 +67,12 @@ function addListenersToBackgroundPage() {
       }
     }
   });
+
+  window.addEventListener('beforeunload', function (event) {
+    if (selectedElements.length) {
+      chrome.runtime.sendMessage({ selectedElements }, (response) => {});
+    }
+  });
 }
 
 function findSelectedElement(target, eventType) {

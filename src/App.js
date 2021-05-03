@@ -1,6 +1,6 @@
 /*global chrome*/
 import './App.css';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createScript } from './utils/scriptUtil';
 import { insertCSS, executeScript, query, sendMessage } from './chrome/api';
 
@@ -12,6 +12,26 @@ function App() {
   const [copySuccessMsg, setCopySuccessMsg] = useState('');
   const selectedTabRef = useRef();
   const textAreaRef = useRef();
+  const selectedElementsRef = useRef([]);
+
+  const cacheSelectedElements = (selectedElements) => {
+    selectedElementsRef.current = selectedElements;
+  };
+
+  useEffect(() => {
+    function handleMessage(request, sender, sendResponse) {
+      console.log(
+        'Message from the content script: ' + JSON.stringify(request)
+      );
+      selectedElementsRef.current = [
+        ...selectedElementsRef.current,
+        ...request.selectedElements,
+      ];
+      sendResponse({ response: 'Response from background script' });
+    }
+
+    chrome.runtime.onMessage.addListener(handleMessage);
+  }, []);
 
   const copyToClipboard = () => {
     if (textAreaRef.current) {
@@ -20,8 +40,12 @@ function App() {
     }
   };
 
-  const generateScript = (selectedElements) => {
-    setScript(createScript(url, selectedElements));
+  const generateScript = (selectedElements = []) => {
+    const actualSelectedElements = [
+      ...selectedElementsRef.current,
+      ...selectedElements,
+    ];
+    setScript(createScript(url, actualSelectedElements));
   };
 
   const handleClick = async (evt) => {
