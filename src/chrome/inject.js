@@ -45,11 +45,27 @@ function addListenersToBackgroundPage() {
   });
 
   document.addEventListener('change', (event) => {
+    // how do I not fire this off after the keydown event when the user hits enter for the keydown event?
     const { target } = event;
     const selectedElement = findSelectedElement(target, 'change');
     selectedElements = [...selectedElements, selectedElement];
     console.log(`selectedElements: ${JSON.stringify(selectedElements)}`);
-    console.log(`vals ${event?.target.value}`);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    const { code, target } = event;
+    if (code === 'Enter') {
+      const selectedElement = findSelectedElement(target, 'change');
+      selectedElements = [...selectedElements, selectedElement];
+      if (target.form) {
+        // for form cases we will access the form through the selectedElement, e.g. input element,
+        // this proved to be more stable
+        const selectedFormElement = { ...selectedElement, type: 'form' };
+        selectedElements = [...selectedElements, selectedFormElement];
+      } else {
+        console.log(`no parent form element found....`);
+      }
+    }
   });
 }
 
@@ -60,6 +76,8 @@ function findSelectedElement(target, eventType) {
       return findElement(target, 'click');
     case 'change':
       return findElement(target, 'change');
+    case 'form':
+      return findElement(target, 'form');
     default:
       return { type: 'not supported' };
   }
@@ -71,27 +89,31 @@ function findElement(target, eventType) {
   const onlyHasClassAtttribute =
     Object.keys(attributes).length === 1 && attributes[0].name === 'class';
   const hasChildren = target.children?.length > 0;
-  if (hasNoAttributes || (onlyHasClassAtttribute && hasChildren)) {
-    const entry = attributes[0];
-    const { name, value } = entry;
-    // set parent fallback
-    fallback = {
-      type: eventType,
-      name,
-      value,
-      input: defaultValue,
-    };
-    return findElement(target.children[0], eventType);
-  } else if (onlyHasClassAtttribute) {
-    // for elements that only have class attribute and no children
-    const entry = attributes[0];
-    const { name, value } = entry;
-    return {
-      type: eventType,
-      name,
-      value,
-      input: defaultValue,
-    };
+
+  // for form cases we need to pick attributes on the form only and not any of its children
+  if (eventType !== 'form') {
+    if (hasNoAttributes || (onlyHasClassAtttribute && hasChildren)) {
+      const entry = attributes[0];
+      const { name, value } = entry;
+      // set parent fallback
+      fallback = {
+        type: eventType,
+        name,
+        value,
+        input: target.value,
+      };
+      return findElement(target.children[0], eventType);
+    } else if (onlyHasClassAtttribute) {
+      // for elements that only have class attribute and no children
+      const entry = attributes[0];
+      const { name, value } = entry;
+      return {
+        type: eventType,
+        name,
+        value,
+        input: target.value,
+      };
+    }
   }
 
   // if we get this far then we have an element with multiple attributes
@@ -103,7 +125,7 @@ function findElement(target, eventType) {
         type: eventType,
         name,
         value,
-        input: defaultValue,
+        input: target.value,
       });
     }
   }
