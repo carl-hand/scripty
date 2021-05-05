@@ -11,14 +11,10 @@ function addListenersToBackgroundPage() {
     box.style.display = 'none';
     document.body.appendChild(box);
   }
+  
   document.addEventListener('mouseover', (event) => {
     const { target = {} } = event;
-    const { ariaLabel, id, name, title } = target;
     const { width, height, left, top } = target.getBoundingClientRect();
-
-    // console.log(`left: ${left} - top: ${top}`);
-    // console.log(`width: ${width} - height: ${height}`);
-    // console.log(`target: ${ariaLabel}-${id}-${name}-${title}`);
 
     const actualTop = top + window.scrollY;
     const actualLeft = left + window.scrollX;
@@ -70,7 +66,10 @@ function addListenersToBackgroundPage() {
 
   window.addEventListener('beforeunload', function (event) {
     if (selectedElements.length) {
-      chrome.runtime.sendMessage({ selectedElements }, (response) => {});
+      chrome.runtime.sendMessage(
+        { type: 'beforeunload', payload: selectedElements },
+        (response) => {}
+      );
     }
   });
 }
@@ -167,7 +166,11 @@ function addEntry(entry) {
 (async () => {
   const src = chrome.runtime.getURL('api.js');
   const contentScript = await import(src);
-  contentScript.addMessageListener(getSelectedElements, addEntry);
+  contentScript.addMessageListener(
+    addListenersToBackgroundPage,
+    getSelectedElements,
+    addEntry
+  );
 })();
 
 (async () => {
@@ -176,4 +179,10 @@ function addEntry(entry) {
   priorityQueue = new PriorityQueue();
 })();
 
-addListenersToBackgroundPage();
+// This will only actually do something if the popup is open
+// otherwise we just get an error in the console...
+// In some cases the user may navigate to a new page after the popup is already open
+// This handler is to make sure we add the necessary listeners back to the page
+window.addEventListener('load', function (event) {
+  chrome.runtime.sendMessage({ type: 'load' }, (response) => {});
+});
