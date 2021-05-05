@@ -18,13 +18,19 @@ export function insertCSS(tabId, files) {
   });
 }
 
-export function addMessageListener(getSelectedElements, addEntry) {
+export function addMessageListener(startFunc, getSelectedElements, addEntry) {
   chrome.runtime.onMessage.addListener(function (
     message,
     sender,
     sendResponse
   ) {
     switch (message.type) {
+      case 'start':
+        if (typeof startFunc === 'function') {
+          startFunc();
+          sendResponse();
+        }
+        break;
       case 'getSelectedElements':
         if (typeof getSelectedElements === 'function') {
           const selectedElements = getSelectedElements();
