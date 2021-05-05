@@ -14,23 +14,29 @@ function App() {
   const textAreaRef = useRef();
   const selectedElementsRef = useRef([]);
 
-  const cacheSelectedElements = (selectedElements) => {
-    selectedElementsRef.current = selectedElements;
-  };
-
   useEffect(() => {
+    
     function handleMessage(request, sender, sendResponse) {
-      console.log(
-        'Message from the content script: ' + JSON.stringify(request)
-      );
-      selectedElementsRef.current = [
-        ...selectedElementsRef.current,
-        ...request.selectedElements,
-      ];
-      sendResponse({ response: 'Response from background script' });
+      const { type, payload } = request;
+      if (type === 'load') {
+        sendMessage(selectedTabRef.current.id, { type: 'start' }, () => {});
+      } else if (type === 'beforeunload') {
+        console.log(
+          'Message from the content script: ' + JSON.stringify(request)
+        );
+        selectedElementsRef.current = [
+          ...selectedElementsRef.current,
+          ...payload,
+        ];
+        sendResponse({ response: 'Response from background script' });
+      }
     }
 
     chrome.runtime.onMessage.addListener(handleMessage);
+
+    return () => {
+      // TODO: remove listener
+    }
   }, []);
 
   const copyToClipboard = () => {
@@ -60,7 +66,9 @@ function App() {
 
     if (name === 'start') {
       try {
-        const activeTabs = await query({ active: true });
+        const activeTabs = await query({
+          active: true,
+        });
         const selectedTabsArray = activeTabs?.filter((tab) => {
           return tab.url === url;
         });
@@ -75,9 +83,7 @@ function App() {
         const { id, url: matchingUrl } = selectedTabsArray[0];
         console.log(`tabs id1: ${id}`);
         console.log(`tabs url1: ${matchingUrl}`);
-
-        insertCSS(id, ['index.css']);
-        executeScript(id, ['inject.js']);
+        sendMessage(selectedTabRef.current.id, { type: 'start' }, () => {});
         setErrorMsg('');
       } catch (err) {
         setErrorMsg('Oops something went wrong...');
