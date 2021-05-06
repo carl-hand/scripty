@@ -78,66 +78,66 @@ function findSelectedElement(target, eventType) {
   priorityQueue.clear();
   switch (eventType) {
     case 'click':
-      return findElement(target, 'click');
+      const element = findElement(target, 'click');
+      // in some cases the element returned won't have a click event in its prototype chain,
+      // for example SVG elements. In this scenario, walk back up the tree to find the first
+      // parent HTML element we can fire a click event off on
+      if (!(element?.target instanceof HTMLElement)) {
+        const parentElement = findParentHtmlElement(element.target);
+        return parentElement != null
+          ? parentElement
+          : getElementNotFound(target);
+      }
+      return element;
     case 'change':
       return findElement(target, 'change');
-    case 'form':
-      return findElement(target, 'form');
     default:
       return { type: 'not supported' };
   }
 }
 
 function findElement(target, eventType) {
-  const { attributes = {}, defaultValue } = target;
+  const { attributes = {} } = target;
   const hasNoAttributes = !target.hasAttributes();
   const onlyHasClassAtttribute =
     Object.keys(attributes).length === 1 && attributes[0].name === 'class';
   const hasChildren = target.children?.length > 0;
 
-  // for form cases we need to pick attributes on the form only and not any of its children
-  if (eventType !== 'form') {
-    if (hasNoAttributes || (onlyHasClassAtttribute && hasChildren)) {
-      const entry = attributes[0];
-      const { name, value } = entry;
-      // set parent fallback
-      fallback = {
-        type: eventType,
-        name,
-        value,
-        input: target.value,
-      };
-      return findElement(target.children[0], eventType);
-    } else if (onlyHasClassAtttribute) {
-      // for elements that only have class attribute and no children
-      const entry = attributes[0];
-      const { name, value } = entry;
-      return {
-        type: eventType,
-        name,
-        value,
-        input: target.value,
-      };
-    }
+  if (hasNoAttributes || (onlyHasClassAtttribute && hasChildren)) {
+    const entry = attributes[0];
+    const { name, value } = entry;
+    // set parent fallback
+    fallback = {
+      type: eventType,
+      name,
+      value,
+      input: target.value,
+      target,
+    };
+    return findElement(target.children[0], eventType);
+  } else if (onlyHasClassAtttribute) {
+    // for elements that only have class attribute and no children
+    const entry = attributes[0];
+    const { name, value } = entry;
+    return {
+      type: eventType,
+      name,
+      value,
+      input: target.value,
+      target,
+    };
   }
 
   // if we get this far then we have an element with multiple attributes
-  for (const key in attributes) {
-    const entry = attributes[key];
-    const { name, value } = entry;
-    if (name && value) {
-      priorityQueue.insert({
-        type: eventType,
-        name,
-        value,
-        input: target.value,
-      });
-    }
-  }
+  const highestPriorityAttribute = findHighestPriorityAttribute(
+    attributes,
+    eventType,
+    target,
+    false
+  );
 
-  if (!priorityQueue.isEmpty()) {
-    // return highest priority attribute
-    return priorityQueue.getAttribute();
+  if (highestPriorityAttribute) {
+    return highestPriorityAttribute;
   }
 
   if (fallback) {
@@ -148,6 +148,34 @@ function findElement(target, eventType) {
   return getElementNotFound(target);
 }
 
+function findHighestPriorityAttribute(
+  attributes,
+  eventType,
+  target,
+  shouldReset
+) {
+  if (shouldReset) {
+    priorityQueue.clear();
+  }
+
+  for (let index = 0; index < attributes.length; index++) {
+    const entry = attributes[index];
+    const { name, value } = entry;
+    if (name && value) {
+      priorityQueue.insert({
+        type: eventType,
+        name,
+        value,
+        input: target.value,
+        target,
+      });
+    }
+  }
+
+  // return highest priority attribute
+  return priorityQueue.getAttribute();
+}
+
 function getElementNotFound(target) {
   return {
     type: 'no match',
@@ -155,12 +183,18 @@ function getElementNotFound(target) {
   };
 }
 
-function getSelectedElements() {
-  return selectedElements;
-}
+function findParentHtmlElement(childElement) {
+  if (!childElement) {
+    return null;
+  }
 
-function addEntry(entry) {
-  selectedElements = [...selectedElements, entry];
+  const parentEl = childElement.parentElement;
+  if (parentEl instanceof HTMLElement) {
+    const { attributes } = parentEl;
+    return findHighestPriorityAttribute(attributes, 'click', parentEl, true);
+  }
+
+  return findParentHtmlElement(parentEl);
 }
 
 (async () => {
@@ -180,7 +214,7 @@ function addEntry(entry) {
         const entry = {
           type: 'logData',
         };
-        addEntry(entry);
+        selectedElements = [...selectedElements, entry];
         sendResponse();
         break;
       default:
