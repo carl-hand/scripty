@@ -11,7 +11,7 @@ function addListenersToBackgroundPage() {
     box.style.display = 'none';
     document.body.appendChild(box);
   }
-  
+
   document.addEventListener('mouseover', (event) => {
     const { target = {} } = event;
     const { width, height, left, top } = target.getBoundingClientRect();
@@ -166,11 +166,29 @@ function addEntry(entry) {
 (async () => {
   const src = chrome.runtime.getURL('api.js');
   const contentScript = await import(src);
-  contentScript.addMessageListener(
-    addListenersToBackgroundPage,
-    getSelectedElements,
-    addEntry
-  );
+
+  const handleMessage = (message, sender, sendResponse) => {
+    switch (message.type) {
+      case 'start':
+        addListenersToBackgroundPage();
+        sendResponse();
+        break;
+      case 'getSelectedElements':
+        sendResponse(selectedElements);
+        break;
+      case 'logData':
+        const entry = {
+          type: 'logData',
+        };
+        addEntry(entry);
+        sendResponse();
+        break;
+      default:
+        console.error('Unrecognised message: ', message);
+    }
+  };
+
+  contentScript.addMessageListener(handleMessage);
 })();
 
 (async () => {

@@ -18,38 +18,8 @@ export function insertCSS(tabId, files) {
   });
 }
 
-export function addMessageListener(startFunc, getSelectedElements, addEntry) {
-  chrome.runtime.onMessage.addListener(function (
-    message,
-    sender,
-    sendResponse
-  ) {
-    switch (message.type) {
-      case 'start':
-        if (typeof startFunc === 'function') {
-          startFunc();
-          sendResponse();
-        }
-        break;
-      case 'getSelectedElements':
-        if (typeof getSelectedElements === 'function') {
-          const selectedElements = getSelectedElements();
-          sendResponse(selectedElements);
-        }
-        break;
-      case 'logData':
-        if (typeof addEntry === 'function') {
-          const entry = {
-            type: 'logData',
-          };
-          addEntry(entry);
-          sendResponse();
-        }
-        break;
-      default:
-        console.error('Unrecognised message: ', message);
-    }
-  });
+export function addMessageListener(listener) {
+  chrome.runtime.onMessage.addListener(listener);
 }
 
 /**

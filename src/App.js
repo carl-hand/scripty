@@ -1,8 +1,7 @@
-/*global chrome*/
 import './App.css';
 import { useEffect, useRef, useState } from 'react';
 import { createScript } from './utils/scriptUtil';
-import { insertCSS, executeScript, query, sendMessage } from './chrome/api';
+import { query, sendMessage, addMessageListener } from './chrome/api';
 
 function App() {
   const [url, setUrl] = useState('');
@@ -15,7 +14,6 @@ function App() {
   const selectedElementsRef = useRef([]);
 
   useEffect(() => {
-    
     function handleMessage(request, sender, sendResponse) {
       const { type, payload } = request;
       if (type === 'load') {
@@ -32,11 +30,11 @@ function App() {
       }
     }
 
-    chrome.runtime.onMessage.addListener(handleMessage);
+    addMessageListener(handleMessage);
 
     return () => {
       // TODO: remove listener
-    }
+    };
   }, []);
 
   const copyToClipboard = () => {
@@ -47,11 +45,11 @@ function App() {
   };
 
   const generateScript = (selectedElements = []) => {
-    const actualSelectedElements = [
+    const allSelectedElements = [
       ...selectedElementsRef.current,
       ...selectedElements,
     ];
-    setScript(createScript(url, actualSelectedElements));
+    setScript(createScript(url, allSelectedElements));
   };
 
   const handleClick = async (evt) => {
