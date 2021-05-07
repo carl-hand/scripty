@@ -1,6 +1,6 @@
 export function createScript(url, selectedElements) {
   if (!selectedElements) {
-    return 'Oops something went wrong';
+    return 'Oops something went wrong, no selectedElements.';
   }
 
   let script = `logData 0 \nnavigate ${url}`;
@@ -20,7 +20,6 @@ export function createScript(url, selectedElements) {
     }
   }
 
-  script += `\nnavigate ${url}`;
   script += '\nwaitForComplete';
 
   return script;
